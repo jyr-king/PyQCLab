@@ -7,12 +7,10 @@ Created on Wed Jun  8 12:20:29 2016
 #import sys
 import numpy as np
 from enum import Enum
-#sys.path.append('.')
-from PyQCLab.Instrument.instrument import *
-<<<<<<< HEAD
+
+from PyQCLab.Instrument.instrument import instrument
 from PyQCLab.Instrument.instr_config import *
-=======
->>>>>>> PyQCLab_alpha0
+
 from time import sleep
 
 class NetworkAnalyser(instrument):
@@ -337,7 +335,12 @@ class ZNB20(NetworkAnalyser):
         self.instrhandle.write('SENSe:SWEep:COUNt {}'.format(self.average))
         self.instrhandle.write('INIT:IMM; *WAI')
 #        sleep(wait)
-        
+    def sweep2(self):
+        self.instrhandle.write('SENSe:SWEep:COUNt {}'.format(self.average))
+        self.instrhandle.write('INIT:IMM; *OPC')
+        while not self.instrhandle.query('INIT:IMM; *OPC?'):
+            sleep(0.1)
+            
     def addSegment(self,seg):
         fstart,fstop,IF,points=seg
         N=int(self.instrhandle.query('SENS:SEGM:COUNt?'))
