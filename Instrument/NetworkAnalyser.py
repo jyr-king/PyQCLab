@@ -9,7 +9,10 @@ import numpy as np
 from enum import Enum
 #sys.path.append('.')
 from PyQCLab.Instrument.instrument import *
+<<<<<<< HEAD
 from PyQCLab.Instrument.instr_config import *
+=======
+>>>>>>> PyQCLab_alpha0
 from time import sleep
 
 class NetworkAnalyser(instrument):

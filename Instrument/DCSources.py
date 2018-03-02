@@ -7,6 +7,7 @@ Created on Thu Oct 20 02:42:32 2016
 from PyQCLab.Instrument.instrument import instrument
 import numpy as np
 
+<<<<<<< HEAD
 class AG33120_DC(instrument):
     def __init__(self,no):
         '''input: no the labeled number on the physical instrument. note: no must be a positive integer.'''
@@ -48,6 +49,11 @@ class AG33120A(instrument):
     def __init__(self,instr_name='AG33120A_0'):
         super().__init__(instr_name)
 #        instrument.__init__(self,instr_name)
+=======
+class AG33120A(instrument):
+    def __init__(self,instr_name='AG33120Aa'):
+        instrument.__init__(self,instr_name)
+>>>>>>> PyQCLab_alpha0
 #        self.instrhandle=self.get_handle()
         self.instrhandle.write('*RST')
         self.__level,self.__offset=self.get_level()
