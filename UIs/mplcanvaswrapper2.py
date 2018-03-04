@@ -85,7 +85,7 @@ class MyDynamicMplCanvas(MyMplCanvas):
         l = [random.randint(0, 10) for i in range(4)]
         
         self.axes.plot([0, 1, 2, 3], l, 'r')
-        self.draw()x
+        self.draw()
 #class MplCanvas(FigureCanvas):
 #
 #    def __init__(self):
