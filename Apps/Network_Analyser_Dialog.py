@@ -8,6 +8,7 @@ Created on Sun Mar  4 12:55:43 2018
 from PyQt5 import QtCore,QtWidgets,QtGui
 from PyQCLab.UIs.Network_Analyser_UI_simple import Ui_Dialog
 from PyQCLab.Instrument.NetworkAnalyser import ZNB20
+import numpy as np
 import sys
 
 class NetworkAnalyzer_Dialog(object):
@@ -24,6 +25,9 @@ class NetworkAnalyzer_Dialog(object):
         self.ui.edt_fspan.editingFinished.connect(lambda:self.update_freq_params('cs'))
         
         self.ui.pushButton_path.pressed.connect(self.set_save_path)
+        self.ui.pushButton_save.pressed.connect(self.save_data)
+        self.ui.pushButton_start.pressed.connect(self.start_sweep)
+        
         self.Dialog.show()
         sys.exit(app.exec_())
     
@@ -86,6 +90,7 @@ class NetworkAnalyzer_Dialog(object):
     def set_save_path(self):
         dir_path=QtWidgets.QFileDialog.getExistingDirectory(self.Dialog,'save file','./')
         self.ui.lineEdit_path.setText(dir_path)
+        print(self.get_save_path())
         
     def get_save_path(self):
         return self.ui.lineEdit_path.text()
@@ -107,6 +112,10 @@ class NetworkAnalyzer_Dialog(object):
 #        self.vna.setSweep((fstart,fstop,IF,points,pwr,avg_times))
 #        self.vna.sweep()
     
+    def save_data(self):
+#        f,sdata=self.vna.getData()
+#        np.savez(self.get_save_path+'/'+self.get_save_filename,freq=f,Sdata=sdata)
+        pass
         
     
 if __name__ == "__main__":
