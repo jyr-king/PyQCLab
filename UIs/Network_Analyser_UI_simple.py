@@ -8,7 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from embedding_in_qt5 import *
+from PyQCLab.UIs.embedding_in_qt5 import *
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):

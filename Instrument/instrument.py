@@ -7,7 +7,7 @@ Created on Sat Sep 05 01:18:49 2015
 import pyvisa as visa
 import numpy as np
 import enum
-from instr_config import VISA_RESOURCES
+from PyQCLab.Instrument.instr_config import VISA_RESOURCES
 
 class instrument(object):
 
