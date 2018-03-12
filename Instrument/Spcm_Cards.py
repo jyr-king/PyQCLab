@@ -9,7 +9,7 @@ import sys
 import numpy as np
 import math
 #import enum
-spcm_run_modes={
+spcm_rep_run_modes={
                 'cont':SPC_REP_STD_CONTINUOUS,
                 'single':SPC_REP_STD_SINGLE,
                 'multi':SPC_REP_STD_MULTI,
@@ -19,6 +19,20 @@ spcm_run_modes={
                 'single_fifo':SPC_REP_FIFO_SINGLE,
                 'multi_fifo':SPC_REP_FIFO_MULTI,
                 'gate_fifo':SPC_REP_FIFO_GATE
+                }
+spcm_daq_run_modes={
+                'std_single':SPC_REC_STD_SINGLE,
+                'std_multi':SPC_REC_STD_MULTI,
+                'std_gate':SPC_REC_STD_GATE,
+                'std_aba':SPC_REC_STD_ABA,
+                'std_segstats':SPC_REC_STD_SEGSTATS,
+                'std_average':SPC_REC_STD_AVERAGE,
+                'fifo_single':SPC_REC_FIFO_SINGLE,
+                'fifo_multi':SPC_REC_FIFO_MULTI,
+                'fifo_gate':SPC_REC_FIFO_GATE,
+                'fifo_aba':SPC_REC_FIFO_ABA,
+                'fifo_segstats':SPC_REC_FIFO_SEGSTATS,
+                'fifo_average':SPC_REC_FIFO_AVERAGE
                 }
 spcm_clock_modes={
                 'int':SPC_CM_INTPLL,
@@ -107,6 +121,21 @@ class Spectrum_Card:
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(samplerate))
         return samplerate.value
     sampleRate=property(fget=_getSampleRate,fset=_setSampleRate)
+# Channel setups:    
+    def chEnable(self,channels):
+        chs=0
+        for i in channels:
+            chs=chs|2**i
+        spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, chs)
+        lChCount=int32(0)
+        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
+        self.chCount=lChCount.value
+        
+    def chEnableAll(self):
+        spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, 2**self.MAX_CHS-1)
+        lChCount=int32(0)
+        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
+        self.chCount=lChCount.value
 #Clock settings:
     def setClockMode(self,mode='int'):
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, spcm_clock_modes[mode])
@@ -172,7 +201,7 @@ class Spcm_DA(Spectrum_Card):
             self.setRange(level,ch)
             
     def setRunMode(self,mode):
-        spcm_dwSetParam_i64(self.hCard, SPC_CARDMODE, spcm_run_modes[mode])
+        spcm_dwSetParam_i64(self.hCard, SPC_CARDMODE, spcm_rep_run_modes[mode])
         
     def chEnable(self,channels):
         chs=0
@@ -215,8 +244,58 @@ class Spcm_DA(Spectrum_Card):
 class Spcm_AD(Spectrum_Card):
     def __init__(self,CardNo=0):
         super().__init__(CardNo)
+        self.chEnableAll()
+        self.setRangeAll('500mV')
+        self.setInputAll()
+        self.setMode('std_multi')
         
+    def setRange(self,rang,ch=0):
+        if rang in ['200mV','500mV','1000mV','2500mV']:
+            outRange=int(rang[:-2])        
+        spcm_dwSetParam_i32(self.hCard, SPC_AMP0 + ch * (SPC_AMP1 - SPC_AMP0), int32(outRange))
     
+    def setRangeAll(self,rang):       
+        for ch in range(self.chCount):
+            self.setRange(rang,ch)
+            
+    def setIuput(self,ch,coupling='DC',filtering=0,offset=0):
+        if coupling in ['ac','Ac','AC']:
+            spcm_dwSetParam_i32(self.hCard, SPC_ACDC0 + ch * (SPC_ACDC1 - SPC_ACDC0), 1)
+        else:
+            spcm_dwSetParam_i32(self.hCard, SPC_ACDC0 + ch * (SPC_ACDC1 - SPC_ACDC0), 0)
+        f= 0 if filtering == 0 else 1
+        spcm_dwSetParam_i32(self.hCard, SPC_FILTER0, f)
+        
+        spcm_dwSetParam_i32(self.hCard, SPC_OFFS0, offset)
+        
+    def setInputAll(self,coupling='DC',filtering=0,offset=0):
+        for ch in range(self.chCount):
+            self.setIuput(ch)
+        
+    def setMode(self,mode):
+        spcm.spcm_dwSetParam_i32 (self.hCard, SPC_CARDMODE, spcm_daq_run_modes[mode])
+        self._mode=mode
+        
+    def setRecord(self,length,n_records=1,pretrig=0):
+        rec_type, rec_mode=self._mode.split('_')
+        n_records = 1 if rec_mode == 'single' else n_records
+        if rec_type == 'std':           
+            self.lMemsize = int32(length*self.chCount*n_records)
+            spcm_dwSetParam_i32 (self.hCard, SPC_MEMSIZE, lMemsize)
+            
+        else:
+            spcm_dwSetParam_i32 (self.hCard, SPC_LOOPS, n_records)
+
+        spcm_dwSetParam_i32 (self.hCard, SPC_SEGMENTSIZE, length)    
+        spcm_dwSetParam_i32 (self.hCard, SPC_POSTTRIGGER, int32(length-pretrig))
+        
+    def start(self):
+        self._pvData = create_string_buffer(self.lMemsize * 2)
+        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | M2CMD_CARD_WAITREADY)
+        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC , 0, self._pvData, 0, 2 * lMemsize)
+        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        self.data=np.frombuffer(self._pvData,dtype='int16')
+               
 #%%        
 if __name__ == '__main__':
     pass
