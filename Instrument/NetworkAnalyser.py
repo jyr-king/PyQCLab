@@ -324,9 +324,10 @@ class ZNB20(NetworkAnalyser):
     IFMAX=15000000
     
     def __init__(self,instr_name='ZNB20'):
-        instrument.__init__(self,instr_name)
+        super().__init__(instr_name)
         self.instrhandle.write('*RST')
         self.instrhandle.write('INIT:CONT OFF')
+        self.instrhandle.timeout=None
         self.measurements={}
         
     def sweep(self):
@@ -338,8 +339,7 @@ class ZNB20(NetworkAnalyser):
     def sweep2(self):
         self.instrhandle.write('SENSe:SWEep:COUNt {}'.format(self.average))
         self.instrhandle.write('INIT:IMM; *OPC')
-        while not self.instrhandle.query('INIT:IMM; *OPC?'):
-            sleep(0.1)
+        return self.instrhandle.query('INIT:IMM; *OPC?')
             
     def addSegment(self,seg):
         fstart,fstop,IF,points=seg
