@@ -6,6 +6,7 @@ Configuration file for instruments.
 
 @author: jyr_king
 """
+from enum import Enum
 
 VISA_RESOURCES={
                   'SMB100A_0': 'TCPIP0::10.204.4.249::INSTR',
@@ -25,6 +26,7 @@ VISA_RESOURCES={
                   }
 
 #instrument specified constanses
+
 PNA_CONSTS={
         'FREQMAX':20e9,
         'FREQMIN':10e6,

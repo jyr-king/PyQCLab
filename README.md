@@ -52,6 +52,8 @@ PyQCLab-->Documents
 - Utils: 数据处理和生成相关的模块；
 - UIs：界面相关的模块；
 - Documents：仪器设备、各python库的相关文档；
+- Examples：一些示例代码；
+- etc：配置文件
 
     
 

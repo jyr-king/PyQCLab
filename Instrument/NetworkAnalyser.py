@@ -9,7 +9,7 @@ import numpy as np
 from enum import Enum
 
 from PyQCLab.Instrument.instrument import instrument
-from PyQCLab.Instrument.instr_config import *
+from PyQCLab.etc.instr_config import *
 
 from time import sleep
 
