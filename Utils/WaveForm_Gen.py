@@ -216,14 +216,14 @@ class WaveForm:
             
         
 if __name__ == '__main__':
-    L=1001
-    samplerate=1e6
+    L=10*1024
+    samplerate=1250000000
     w=WaveForm(L,samplerate)
-    w.base.insert(100,gaussian(100,0.5))
+    w.base.insert(1000,gaussian(2000,0.5))
     
-    c1=Carrier(L,samplerate,freq=1e5,phase=math.pi*0.5,offset=0.)
-    c2=Carrier(L,samplerate,freq=0.5e5,phase=math.pi,offset=0.)
-    c3=Carrier(L,samplerate,freq=1e4,phase=math.pi,offset=0.)
+    c1=Carrier(L,samplerate,freq=1e7,phase=math.pi*0.5,offset=0.)
+    c2=Carrier(L,samplerate,freq=0.5e7,phase=math.pi,offset=0.)
+    c3=Carrier(L,samplerate,freq=1e6,phase=math.pi,offset=0.)
     w.carrier.adds([c1,c2,c3])
     w.carrier.update()
     w.carrier.offset=0.3

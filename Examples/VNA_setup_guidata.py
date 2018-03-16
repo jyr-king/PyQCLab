@@ -6,8 +6,10 @@ Created on Mon Mar 12 22:50:13 2018
 """
 
 import numpy as np
+from pylab import *
+import skrf as rf
 from PyQCLab.Instrument.NetworkAnalyser import *
-from PyQCLab.Instrument.instr_config import *
+from PyQCLab.etc.instr_config import *
 import guidata.qt.QtCore as QtCore
 import guidata.qt.QtGui as QtGui
 
@@ -16,10 +18,10 @@ import guidata.dataset.dataitems as gdi
 import guidata.dataset.qtwidgets as gdq
 import guidata.configtools as configtools
 
-import guiqwt.plot as gqp
-import guiqwt.curve as gqc
-import guiqwt.image as gqi
-import guiqwt.tools as gqt
+#import guiqwt.plot as gqp
+#import guiqwt.curve as gqc
+#import guiqwt.image as gqi
+#import guiqwt.tools as gqt
 import time
 
 class Vna_Parameters(gdt.DataSet):
@@ -58,7 +60,7 @@ class Vna_Parameters(gdt.DataSet):
     save_enable = gdi.BoolItem("Enable Data Save",
                       help="If disabled, the following parameters will be ignored",
                       default=False)
-    path = gdi.DirectoryItem('Directory:','C:/Users/jyr_king/Documents/')
+    path = gdi.DirectoryItem('Directory:','C:/Users/SC05/Documents/')
     filename = gdi.StringItem('File Name:',time.strftime("%Y-%m-%d", time.localtime())+'_VNA_sweep')
     _g4 = gdt.EndGroup('Save:')
     
@@ -69,11 +71,24 @@ if __name__ == "__main__":
     import guidata
     _app = guidata.qapplication()
     
-    vna = Vna_Parameters()
-    if vna.edit():
-        print(vna)
-    vna.view()
+    vna_params = Vna_Parameters()
+    if vna_params.edit():
+        vna = ZNB20()
+#        vna.sweepMode=vna_params.swp_mode
+#        vna.sweepType=vna_params.swp_type
+        if vna_params.choice == 'CS':
+            fstart,fstop=vna_params.fcenter-vna_params.fspan/2*1e9,vna_params.fcenter+vna_params.fspan/2*1e9
+        else:
+            fstart,fstop=vna_params.fstart*1e9,vna_params.fstop*1e9
+        
+        vna.setSweep([fstart,fstop,vna_params.swp_IFbandwidth,vna_params.swp_points,vna_params.pwr,vna_params.swp_average])
+        vna.sweep2()
+        freq,Sdata=vna.getData()
+        if vna_params:
+            np.savez(vna_params.path+vna_params.filename,freq=freq,Sdata=Sdata)
+        figure(),plot(freq,rf.mag_2_db(np.abs(Sdata)))
+        
 #    stamp_gbox = gdq.DataSetEditGroupBox("Dots", Vna_Parameters)
 #    stamp_gbox.show()
-    x=vna.swp_IFbandwidth
-    print(vna.choice,x)
+    x=vna_params.swp_IFbandwidth
+    print(vna_params.choice,x)
