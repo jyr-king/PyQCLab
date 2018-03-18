@@ -10,54 +10,7 @@ import sys
 import numpy as np
 import math
 #import enum
-spcm_rep_run_modes={
-                'cont':SPC_REP_STD_CONTINUOUS,
-                'single':SPC_REP_STD_SINGLE,
-                'multi':SPC_REP_STD_MULTI,
-                'gate':SPC_REP_STD_GATE,
-                'sequence':SPC_REP_STD_SEQUENCE,
-                'single_r':SPC_REP_STD_SINGLERESTART,
-                'single_fifo':SPC_REP_FIFO_SINGLE,
-                'multi_fifo':SPC_REP_FIFO_MULTI,
-                'gate_fifo':SPC_REP_FIFO_GATE
-                }
-spcm_daq_run_modes={
-                'std_single':SPC_REC_STD_SINGLE,
-                'std_multi':SPC_REC_STD_MULTI,
-                'std_gate':SPC_REC_STD_GATE,
-                'std_aba':SPC_REC_STD_ABA,
-                'std_segstats':SPC_REC_STD_SEGSTATS,
-                'std_average':SPC_REC_STD_AVERAGE,
-                'fifo_single':SPC_REC_FIFO_SINGLE,
-                'fifo_multi':SPC_REC_FIFO_MULTI,
-                'fifo_gate':SPC_REC_FIFO_GATE,
-                'fifo_aba':SPC_REC_FIFO_ABA,
-                'fifo_segstats':SPC_REC_FIFO_SEGSTATS,
-                'fifo_average':SPC_REC_FIFO_AVERAGE
-                }
-spcm_clock_modes={
-                'int':SPC_CM_INTPLL,
-                'ext':SPC_CM_EXTREFCLOCK
-                }
-spcm_trig_sources={
-            'sw':SPC_TMASK_SOFTWARE,
-            'ext0':SPC_TMASK_EXT0,
-            'ext1':SPC_TMASK_EXT1,
-            'ext01':SPC_TMASK_EXT0 | SPC_TMASK_EXT1
-            }
-spcm_trig_masks={
-            'or':SPC_TRIG_ORMASK,
-            'and':SPC_TRIG_ANDMASK
-            }
-spcm_trig_modes={
-            'pos':SPC_TM_POS,
-            'neg':SPC_TM_NEG,
-            'both':SPC_TM_BOTH,
-            'winenter':SPC_TM_WINENTER,
-            'winleave':SPC_TM_WINLEAVE,
-            'inwin':SPC_TM_INWIN,
-            'outwin':SPC_TM_OUTSIDEWIN
-            }
+
 class Spectrum_Card:
 
     def __init__(self,CardNo=0):
@@ -67,24 +20,27 @@ class Spectrum_Card:
         if self.hCard == None:
             print("no card found\n")
         self.resetCard()
-        
-        lCardType = int32(0)
+        #gethor card information:
+        lCardType = c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_PCITYP, byref(lCardType))
-        lSerialNumber = int32(0)
+        lSerialNumber = c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_PCISERIALNO, byref(lSerialNumber))
-        lFncType = int32(0)
+        lFncType = c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_FNCTYPE, byref(lFncType))
-        lChCount=int32(0)
+        lChCount=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
-        lBytesPerSample = int32(0)
+        lBytesPerSample = c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_MIINST_BYTESPERSAMPLE,  byref(lBytesPerSample))
-        lMaxChs=int32(0)
+        lBitsPerSample = c_int32(0)
+        spcm_dwGetParam_i32(self.hCard, SPC_MIINST_BITSPERSAMPLE,  byref(lBitsPerSample))
+        lMaxChs=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_MIINST_CHPERMODULE, byref(lMaxChs))
         self.cardType=lCardType.value
         self.seriaNumber=lSerialNumber.value
         self.funcType=lFncType.value
         self.chCount = lChCount.value
         self.bytesPerSample=lBytesPerSample.value
+        self.bitsPerSample=lBitsPerSample.value
         self.MAX_CHS=lMaxChs.value
 #        self.amplitudes=np.ones(self.MAX_CHS)
         self.szTypeToName()
@@ -93,6 +49,13 @@ class Spectrum_Card:
             print("Found: {0} sn {1:05d}\n".format(self.cardName,self.seriaNumber))
         else:
             print("Card: {0} sn {1:05d} not supported\n".format(self.cardName,self.seriaNumber))
+            
+        #Some default settings:
+        self.enabled_chs=[]
+        self.range_chs=[]
+        self.chEnableAll()
+        self.setClockMode('int')
+        self.setTrigger(trig_source='ext0',mode='pos',level=1000,couple='DC',impedance='50Ohm')
     
     def szTypeToName (self):
 #        sName = ''
@@ -114,35 +77,46 @@ class Spectrum_Card:
             sName = 'unknown type'
         self.cardName=sName
         
+    def getErrorInfo(self):
+        szErrorTextBuffer = create_string_buffer (ERRORTEXTLEN)
+        sys.stdout.write("{0}\n".format(szErrorTextBuffer.value))
+    
+    # Samplerate:        
     def _setSampleRate(self,samplerate):
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, samplerate)
         
     def _getSampleRate(self):
-        samplerate=int64(0)
+        samplerate=c_int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(samplerate))
         return samplerate.value
     sampleRate=property(fget=_getSampleRate,fset=_setSampleRate)
-# Channel setups:    
+    # Channel setups:    
     def chEnable(self,channels):
         chs=0
         for i in channels:
             chs=chs|2**i
         spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, chs)
-        lChCount=int32(0)
+        lChCount=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
         self.chCount=lChCount.value
+        for ch in channels:
+            if ch not in self.enabled_chs:
+                self.enabled_chs.append(ch)
         
     def chEnableAll(self):
         spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, 2**self.MAX_CHS-1)
-        lChCount=int32(0)
+        lChCount=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
         self.chCount=lChCount.value
-#Clock settings:
+        for ch in range(self.MAX_CHS):
+            if ch not in self.enabled_chs:
+                self.enabled_chs.append(ch)
+    #Clock settings, int or ext?:
     def setClockMode(self,mode='int'):
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, spcm_clock_modes[mode])
         if mode == 'ext':
             spcm_dwSetParam_i32(self.hCard, SPC_REFERENCECLOCK, 10000000)
-#Trigger settings:            
+    #Trigger settings:            
     def setTriggerSource(self,trig_source='sw',mask='or'):        
         spcm_dwSetParam_i32(self.hCard, spcm_trig_masks[mask], spcm_trig_sources[trig_source])
         
@@ -164,10 +138,25 @@ class Spectrum_Card:
             spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_ACDC, 0)
         elif couple in ['ac','Ac','AC']:
             spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_ACDC, 1)
+            
+    def setTrigger(self,**kwargs):
+        if 'trig_source' in kwargs.keys():
+            if kwargs['trig_source'] == 'sw':
+                self.setTriggerSource()
+            elif kwargs['trig_source'] == 'ext0':
+                self.setTriggerSource('ext0')
+                if 'mode' in kwargs.keys():
+                    self.setTriggerMode(mode=kwargs['mode'])
+                elif 'level' in kwargs.keys():
+                    self.setTriggerLevel(kwargs['level'])
+                elif 'coupling' in kwargs.keys():
+                    self.setTriggerInputCoupling(kwargs['coupling'])
+                elif 'impedance' in kwargs.keys():
+                    self.setTriggerImpedance(kwargs['impedance'])
+                
 #Card controll:    
     def start(self,loops=0):
-        llLoops=int64(loops)
-        
+        llLoops=c_int64(loops)        
         spcm_dwSetParam_i64(self.hCard, SPC_LOOPS,llLoops)
         dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
         return dwError
@@ -188,18 +177,32 @@ class Spcm_DA(Spectrum_Card):
     def __init__(self,CardNo=0):
         super().__init__(CardNo)
         
-    def setRange(self,level,ch=0):
-        outRange=math.ceil(abs(level))
-        if outRange > 2500:
-            print('Warning: the setting level is two large, using the highest range of the board.')
-            outRange=2500
-        elif outRange < 80:
-            outRange=80
-        spcm_dwSetParam_i32(self.hCard, SPC_AMP0 + ch * (SPC_AMP1 - SPC_AMP0), int32(outRange))
+        self.setOutputAll(1)
+        self.setRangeAll(1000)
+        self.setRunMode('single_r')
+        self.wfData=np.empty(0)
+        
+    def setRange(self,rang,ch=0):
+        try:
+            outRange=math.ceil(abs(rang))
+            ch=int(ch)
+        except:
+            sys.stdout.write('Error: "rang" and "ch" must be numbers.')
+        else:
+            if outRange > 2500:
+                outRange = 2500
+            elif outRange < 80:
+                outRange = 80
+            else:
+                if ch in range(self.MAX_CHS):
+                    spcm_dwSetParam_i32(self.hCard, SPC_AMP0 + ch * (SPC_AMP1 - SPC_AMP0), c_int32(outRange))
+                    self.range_chs[ch]=outRange
+                else:
+                    sys.stdout.write('ValueError: "ch" must be a integer between 0 and MAX_CHS. Nothing will do.')
     
-    def setRangeAll(self,level):       
+    def setRangeAll(self,rang):       
         for ch in range(self.chCount):
-            self.setRange(level,ch)
+            self.setRange(rang,ch)
             
     def setRunMode(self,mode):
         spcm_dwSetParam_i64(self.hCard, SPC_CARDMODE, spcm_rep_run_modes[mode])
@@ -209,13 +212,13 @@ class Spcm_DA(Spectrum_Card):
         for i in channels:
             chs=chs|2**i
         spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, chs)
-        lChCount=int32(0)
+        lChCount=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
         self.chCount=lChCount.value
         
     def chEnableAll(self):
         spcm_dwSetParam_i64(self.hCard, SPC_CHENABLE, 2**self.MAX_CHS-1)
-        lChCount=int32(0)
+        lChCount=c_int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(lChCount))
         self.chCount=lChCount.value
         
@@ -236,31 +239,33 @@ class Spcm_DA(Spectrum_Card):
         
     def writeWaveForm(self,wfdata):
         self.wfData=wfdata
-        lMemsize=int64(int(len(wfdata)/self.chCount))
+        lMemsize=c_int64(int(len(wfdata)/self.chCount))
         spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, lMemsize)
-        qwBufferSize = uint64(wfdata.size*self.bytesPerSample)
+        qwBufferSize = c_uint64(wfdata.size*self.bytesPerSample)
         pvBuffer = create_string_buffer(qwBufferSize.value)
         pnBuffer = cast(pvBuffer, ptr16)
         for i in range(wfdata.size):
             pnBuffer[i] = wfdata[i]
-        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), pvBuffer, uint64(0), qwBufferSize)
-        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-        print("... data has been transferred to board memory\n")
+        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, c_int32(0), pvBuffer, c_uint64(0), qwBufferSize)
+        dwError = spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        if not dwError:
+            self.getErrorInfo()
+        else:
+            sys.stdout.write("... data has been transferred to board memory\n")
         
     def readWaveForm(self):
-        qwBufferSize = uint64(self.wfData.size*self.bytesPerSample)
-        pvBuffer=(c_long*qwBufferSize.value)()
-        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC, int32(0), pvBuffer, uint64(0), qwBufferSize)
-        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-        data=np.zeros(self.wfData.size)
+        if self.wfData.size:
+            qwBufferSize = c_uint64(self.wfData.size*self.bytesPerSample)
+            pvBuffer=(c_long*qwBufferSize.value)()
+            spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC, c_int32(0), pvBuffer, c_uint64(0), qwBufferSize)
+            spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         for i in range(self.wfData.size):
-            data[i]=pvBuffer[i]
-        return data
+            self.wfData[i]=pvBuffer[i]
     
 class Spcm_AD(Spectrum_Card):
     def __init__(self,CardNo=0):
         super().__init__(CardNo)
-        self.chEnableAll()
+        
         self.setRangeAll('500mV')
         self.setInputAll()
         self.setMode('std_multi')
@@ -268,7 +273,13 @@ class Spcm_AD(Spectrum_Card):
     def setRange(self,rang,ch=0):
         if rang in ['200mV','500mV','1000mV','2500mV']:
             outRange=int(rang[:-2])        
-        spcm_dwSetParam_i32(self.hCard, SPC_AMP0 + ch * (SPC_AMP1 - SPC_AMP0), int32(outRange))
+        try:
+            ch=int(ch)
+        except:
+            sys.stdout.write('Error: "ch" must be a integer between 0 and MAX_CHS.')
+        else:
+            spcm_dwSetParam_i32(self.hCard, SPC_AMP0 + ch * (SPC_AMP1 - SPC_AMP0), c_int32(outRange))
+            self.range_chs[ch] = outRange
     
     def setRangeAll(self,rang):       
         for ch in range(self.chCount):
@@ -292,75 +303,109 @@ class Spcm_AD(Spectrum_Card):
         spcm_dwSetParam_i32 (self.hCard, SPC_CARDMODE, spcm_daq_run_modes[mode])
         self._mode=mode
         
-    def setRecord(self,length,n_records=1,pretrig=0):
+    def setRecord(self,length,n_records=1,pretrig=32):
         rec_type, rec_mode=self._mode.split('_')
-        n_records = 1 if rec_mode == 'single' else n_records
-        if rec_type == 'std':           
-            self.lMemsize = int32(length*self.chCount*n_records)
+        SPC_LEN_RECORD_MIN=64
+        SPC_LEN_RECORD_STEP=32
+        SPC_LEN_PRETRIG_MIN=32
+        SPC_LEN_POSTTRIG_MIN=32
+        SPC_LEN_PRETRIG_STEP=32
+        #record length and pretrig must follow some restricts:
+        if length < SPC_LEN_RECORD_MIN:
+            length = SPC_LEN_RECORD_MIN
+        else:
+            length = math.ceil((length-SPC_LEN_RECORD_MIN)/SPC_LEN_RECORD_STEP)*SPC_LEN_RECORD_STEP+SPC_LEN_RECORD_MIN
+        
+        if pretrig < SPC_LEN_PRETRIG_MIN:
+            pretrig = SPC_LEN_PRETRIG_MIN
+        elif pretrig > (length - SPC_LEN_POSTTRIG_MIN):
+            pretrig = length - SPC_LEN_POSTTRIG_MIN
+        else:
+            pretrig = math.ceil((pretrig-SPC_LEN_PRETRIG_MIN)/SPC_LEN_PRETRIG_STEP)*SPC_LEN_PRETRIG_STEP+SPC_LEN_PRETRIG_MIN
+            
+        n_records = 1 if rec_mode == 'single' else int(n_records)
+        #计算所需的内存空间（以采样点为单位，实际分配空间的时候需要乘以BytesPerSample），单个记录长度*通道数*记录数
+        self.lMemsize = c_int32(length*self.chCount*n_records)
+        if rec_type == 'std':
+            #设置notify size=0，即一直到采集结束才触发中断事件。                     
+            self.lNotifySize = c_int32(0)
             spcm_dwSetParam_i32 (self.hCard, SPC_MEMSIZE, self.lMemsize.value)
             
         else:
             spcm_dwSetParam_i32 (self.hCard, SPC_LOOPS, n_records)
-
+            #FIFO模式下，我们尝试分配足够大的buffer（能够容得下所有的采样点），因此可以与std模式一样的运行。
+            self.lNotifySize = c_int32(0)
+#            self.lNotifySize = c_int32(self.bytesPerSample*self.lMemsize.value)
+            
         spcm_dwSetParam_i32 (self.hCard, SPC_SEGMENTSIZE, length)    
         spcm_dwSetParam_i32 (self.hCard, SPC_POSTTRIGGER, length-pretrig)
         
     def start(self):
-        self._pvData = create_string_buffer(self.lMemsize.value * 2)
-        qwBufferSize = uint64 (self.lMemsize.value * 2)
-        lNotifySize = int32 (0)
-        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC, lNotifySize, self._pvData, uint64 (0), qwBufferSize)
+        #计算所需缓存大小，为了简化操作，只使用一个刚好能装下所有采样点的buffer。
+        qwBufferSize = c_uint64 (self.lMemsize.value * self.bytesPerSample)
+        #分配缓存：
+        self._pvData = create_string_buffer(qwBufferSize.value)       
+        #Define the transfer:
+        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC, self.lNotifySize, self._pvData, c_uint64 (0), qwBufferSize)
 #        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC , 0, self.pnData, 0, 2 * self.lMemsize.value)
 #        self.pnData=cast(self._pvData,ptr16)
 #        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | M2CMD_CARD_WAITREADY)
+        #启动采集卡，等待触发，开始DMA数据传输
         dwError = spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | M2CMD_DATA_STARTDMA)
         spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_CARD_WAITREADY)
-        
-#        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        #取出数据：
         self.data=np.zeros(self.lMemsize.value)
         if self.bytesPerSample == 1:
             pnData = cast(self._pvData,ptr8)
-            
-#            self.data=np.frombuffer(pnData,dtype='int8',count=self.lMemsize.value)
         elif self.bytesPerSample == 2:
             pnData = cast(self._pvData,ptr16)
-            
-        for i in range(self.lMemsize.value):
-            self.data[i] = pnData[i]
+        
+        self.raw_data = pnData[:self.lMemsize.value]
+        
+#        for i in range(self.lMemsize.value):
+#            self.data[i] = pnData[i]
 #            self.data=np.frombuffer(pnData,dtype='int16',count=self.lMemsize.value)
-               
+    def getData(self,ch):
+        return self.raw_data.reshape([-1,self.chCount])[:,ch]/2**(self.bitsPerSample-1)*self.range_chs[ch]              
 #%%        
 if __name__ == '__main__':
     from PyQCLab.Utils.WaveForm_Gen import *
     from PyQCLab.Instrument.DG645 import *
     from time import sleep
-    
+    #设置外部触发
     dg=DG645()
     dg.delayA=40e-8
     dg.delayAB=1e-6
     dg.trigSource('int')
-    dg.trigRate(1e2)
-    
+    dg.trigRate(1e4)
+    #设置波形回放卡：
     sp1=Spcm_DA(0)
     sp1.chEnableAll()
     sp1.setOutputAll()
     sp1.setRangeAll(1000)
-    sp1.setRunMode('single')
+    sp1.setRunMode('single_r')
     sp1.setClockMode('int')
-    sp1.setTriggerSource('ext0')
-    sp1.setTriggerMode(trig='ext0',mode='pos')
-    sp1.setTriggerLevel(500)
-    sp1.setTriggerInputCoupling('DC')
-    sp1.setTriggerImpedance('1MOhm')
+#    sp1.setTriggerSource('ext0')
+#    sp1.setTriggerMode(trig='ext0',mode='pos')
+#    sp1.setTriggerLevel(500)
+#    sp1.setTriggerInputCoupling('DC')
+#    sp1.setTriggerImpedance('1MOhm')
+    sp1.setTrigger(trig_source='ext0',mode='pos',level=1000,coupling='DC',impedance='50Ohm')
+    da_samplerate=sp1.sampleRate
 #    
 ##    sp1.runmode='cont'
 ##    sp1.setTriggerSource('sw')
 ##    sp1.setTriggerMode()
 ##    sp1.setClockMode('int')
 ##    #calculate the test waveform:
+    #写入波形：
+    #波形长度128K：
     NumofSamples=KILO_B(128)
-    w1=WaveForm(NumofSamples,sp1.sampleRate)
+    #对应的周期为T_da:
+    T_da=NumofSamples/da_samplerate
+    w1=WaveForm(NumofSamples,da_samplerate)
     w1.base.inserts(KILO_B(1),[gaussian_r(KILO_B(1),0.5),rectangle(KILO_B(10)),gaussian_f(KILO_B(1),0.5)])
+    #给w1添加三种不同频率的载波：
     c1=Carrier(NumofSamples,sp1.sampleRate,freq=1e7,phase=math.pi*0.5,offset=0.)
     c2=Carrier(NumofSamples,sp1.sampleRate,freq=0.5e7,phase=math.pi,offset=0.)
     c3=Carrier(NumofSamples,sp1.sampleRate,freq=1e6,phase=math.pi,offset=0.)
@@ -368,16 +413,16 @@ if __name__ == '__main__':
     w1.carrier.update()
     w1.update('spcm4')
     figure(),plot(w1.waveform)
-    
-    w2=WaveForm(NumofSamples,sp1.sampleRate)
+    #w1只有一种载波频率：
+    w2=WaveForm(NumofSamples,da_samplerate)
     w2.base.insert(KILO_B(1),rectangle(KILO_B(50)))
     w2.carrier.add(c1)
     w2.carrier.update()
     w2.update('spcm4')
     figure(),plot(w2.waveform)
     
-    wfdata=np.concatenate((w2.waveform,w2.waveform))
-    wfdata=wfdata.reshape(2,-1).transpose().flatten()
+    wfdata=np.array([w1.waveform,w2.waveform]).T.flatten() 
+#    wfdata=wfdata.reshape(2,-1).transpose().flatten()
     sp1.writeWaveForm(wfdata)
 #    wf_raw = np.zeros(NumofSamples)
 #    wf_raw[100:1100]=np.sin(np.linspace(0,2*np.pi,1000))
@@ -396,28 +441,28 @@ if __name__ == '__main__':
 #    sp1.stop()    
 #    sp1.closeCard()
 
-#    sp2=Spcm_AD(2)
-#    sp2.setRangeAll('2500mV')
-#    sp2.setClockMode('int')
+    sp2=Spcm_AD(2)
+    sp2.setRangeAll('1000mV')
+    sp2.setClockMode('int')
+    sp1.setTrigger(trig_source='ext0',mode='pos',level=1000,coupling='DC',impedance='50Ohm')
 #    sp2.setTriggerSource('ext0')
 #    sp2.setTriggerMode(trig='ext0',mode='pos')
 #    sp2.setTriggerLevel(1000)
 #    sp2.setTriggerInputCoupling('DC')
 #    sp2.setTriggerImpedance('50Ohm')
-#    sp2.setInputAll()
-#    sp2.setRecord(1024,100,pretrig=32)
-#    sp2.start()
-##    sp2.stop()
-#    data=sp2.data
-#    data2=data.reshape([-1,2])
-#    figure(),plot(data2[:,0]/128*2.5,'o-')
-    from Instrument.M4i_2211 import M4i2211
-    #from Instrument.M4i_Sync6631 import sync6631   
-    da1=M4i2211()
-    da1.setAnalogAllIn(3,2500)
-    da1.setSampleRate_InterClock(5000)
-    da1.setTrigger('ext',500)
-    da1.setFIFOmode(3,1024,1,1)
-    bufCh0,bufCh1=da1.getFIFOdata(3)
-    figure()
-    plot(bufCh0)
+    sp2.setInputAll()
+    sp2.setRecord(1024,100,pretrig=32)
+    sp2.start()
+#    sp2.stop()
+    data_ch0,data_ch1=sp2.getData(0),sp2.getData(1)
+    figure(),plot(data_ch0,'o-')
+#    from Instrument.M4i_2211 import M4i2211
+#    #from Instrument.M4i_Sync6631 import sync6631   
+#    da1=M4i2211()
+#    da1.setAnalogAllIn(3,2500)
+#    da1.setSampleRate_InterClock(5000)
+#    da1.setTrigger('ext',500)
+#    da1.setFIFOmode(3,1024,1,1)
+#    bufCh0,bufCh1=da1.getFIFOdata(3)
+#    figure()
+#    plot(bufCh0)

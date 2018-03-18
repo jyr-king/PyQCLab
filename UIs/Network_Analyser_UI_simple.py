@@ -218,7 +218,7 @@ class Ui_Dialog(object):
         self.verticalLayout_canvas = QtWidgets.QVBoxLayout(self.widget1)
         self.verticalLayout_canvas.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_canvas.setObjectName("verticalLayout_canvas")
-        self.graphicsView = QtWidgets.QGraphicsView(self.widget1)
+#        self.graphicsView = QtWidgets.QGraphicsView(self.widget1)
         self.graphicsView = MyStaticMplCanvas(self.widget1)
         self.graphicsView.setObjectName("graphicsView")
         self.ntb=NavigationToolbar(self.graphicsView,self.widget1) 

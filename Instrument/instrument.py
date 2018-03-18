@@ -1,21 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Sep 05 01:18:49 2015
-
+The common parent class for all the instrument that communicate via VISA protocol.
 @author: jyr
 """
 import pyvisa as visa
-import numpy as np
-import enum
-from PyQCLab.Instrument.instr_config import VISA_RESOURCES
+#import numpy as np
+#import enum
+from PyQCLab.etc.instr_config import VISA_RESOURCES
 
 class instrument(object):
-
+    """
+    The common parent class for all the instrument that communicate via VISA protocol.
+    """
     def __init__(self, instr_name):
         super().__init__()
         self.__instr_name = instr_name
         self.__rm = visa.ResourceManager()
         self.__instr_handle = self.__rm.open_resource(VISA_RESOURCES[instr_name])
+        #默认设置timeout为无限长：
+        self.instrhandle.timeout=None
 
     def close(self):
         self.__instr_handle.close()

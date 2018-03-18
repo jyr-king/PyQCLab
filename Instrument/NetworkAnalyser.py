@@ -327,7 +327,6 @@ class ZNB20(NetworkAnalyser):
         super().__init__(instr_name)
         self.instrhandle.write('*RST')
         self.instrhandle.write('INIT:CONT OFF')
-        self.instrhandle.timeout=None
         self.measurements={}
         
     def sweep(self):

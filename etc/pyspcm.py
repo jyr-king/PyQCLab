@@ -9,6 +9,60 @@ from PyQCLab.Instrument.py_header.regs import *
 # load registers for easier access
 from PyQCLab.Instrument.py_header.spcerr import *
 
+spcm_rep_run_modes={
+                'cont':SPC_REP_STD_CONTINUOUS,
+                'single':SPC_REP_STD_SINGLE,
+                'multi':SPC_REP_STD_MULTI,
+                'gate':SPC_REP_STD_GATE,
+                'sequence':SPC_REP_STD_SEQUENCE,
+                'single_r':SPC_REP_STD_SINGLERESTART,
+                'single_fifo':SPC_REP_FIFO_SINGLE,
+                'multi_fifo':SPC_REP_FIFO_MULTI,
+                'gate_fifo':SPC_REP_FIFO_GATE
+                }
+
+spcm_daq_run_modes={
+                'std_single':SPC_REC_STD_SINGLE,
+                'std_multi':SPC_REC_STD_MULTI,
+                'std_gate':SPC_REC_STD_GATE,
+                'std_aba':SPC_REC_STD_ABA,
+                'std_segstats':SPC_REC_STD_SEGSTATS,
+                'std_average':SPC_REC_STD_AVERAGE,
+                'fifo_single':SPC_REC_FIFO_SINGLE,
+                'fifo_multi':SPC_REC_FIFO_MULTI,
+                'fifo_gate':SPC_REC_FIFO_GATE,
+                'fifo_aba':SPC_REC_FIFO_ABA,
+                'fifo_segstats':SPC_REC_FIFO_SEGSTATS,
+                'fifo_average':SPC_REC_FIFO_AVERAGE
+                }
+
+spcm_clock_modes={
+                'int':SPC_CM_INTPLL,
+                'ext':SPC_CM_EXTREFCLOCK
+                }
+
+spcm_trig_sources={
+            'sw':SPC_TMASK_SOFTWARE,
+            'ext0':SPC_TMASK_EXT0,
+            'ext1':SPC_TMASK_EXT1,
+            'ext01':SPC_TMASK_EXT0 | SPC_TMASK_EXT1
+            }
+
+spcm_trig_masks={
+            'or':SPC_TRIG_ORMASK,
+            'and':SPC_TRIG_ANDMASK
+            }
+
+spcm_trig_modes={
+            'pos':SPC_TM_POS,
+            'neg':SPC_TM_NEG,
+            'both':SPC_TM_BOTH,
+            'winenter':SPC_TM_WINENTER,
+            'winleave':SPC_TM_WINLEAVE,
+            'inwin':SPC_TM_INWIN,
+            'outwin':SPC_TM_OUTSIDEWIN
+            }
+
 SPCM_DIR_PCTOCARD = 0
 SPCM_DIR_CARDTOPC = 1
 
@@ -25,25 +79,26 @@ else:
     bIs64Bit = 0
 
 # define pointer aliases
-int8  = c_int8
-int16 = c_int16
-int32 = c_int32
-int64 = c_int64
+#类型定义与python内置的类型重名了，容易造成混淆，先不用别名了
+#int8  = c_int8
+#int16 = c_int16
+#int32 = c_int32
+#int64 = c_int64
 
-ptr8  = POINTER (int8)
-ptr16 = POINTER (int16)
-ptr32 = POINTER (int32)
-ptr64 = POINTER (int64)
+ptr8  = POINTER (c_int8)
+ptr16 = POINTER (c_int16)
+ptr32 = POINTER (c_int32)
+ptr64 = POINTER (c_int64)
 
-uint8  = c_uint8
-uint16 = c_uint16
-uint32 = c_uint32
-uint64 = c_uint64
+#uint8  = c_uint8
+#uint16 = c_uint16
+#uint32 = c_uint32
+#uint64 = c_uint64
 
-uptr8  = POINTER (uint8)
-uptr16 = POINTER (uint16)
-uptr32 = POINTER (uint32)
-uptr64 = POINTER (uint64)
+uptr8  = POINTER (c_uint8)
+uptr16 = POINTER (c_uint16)
+uptr32 = POINTER (c_uint32)
+uptr64 = POINTER (c_uint64)
 
 # Windows
 if os.name == 'nt':
