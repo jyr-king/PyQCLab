@@ -7,13 +7,13 @@ Created on Thu Oct 20 02:42:32 2016
 from PyQCLab.Instrument.instrument import instrument
 import numpy as np
 
-<<<<<<< HEAD
 class AG33120_DC(instrument):
     def __init__(self,no):
         '''input: no the labeled number on the physical instrument. note: no must be a positive integer.'''
         instr_name='AG33120A'+str(no)
         super().__init__(instr_name)
         self.instrhandle.write('*RST')
+        self.instrhandle.write('FUNCtion:SHAPe DC')
         
     def _setLevel(self,level):
         pass
@@ -44,17 +44,10 @@ class AG33120_DC(instrument):
     mode=property(fget=_getMode,fset=_setMode)
     output=property(fget=_getOutput,fset=_setOutput)
         
-    
-class AG33120A(instrument):
-    def __init__(self,instr_name='AG33120A_0'):
-        super().__init__(instr_name)
-#        instrument.__init__(self,instr_name)
-=======
 class AG33120A(instrument):
     def __init__(self,instr_name='AG33120Aa'):
         instrument.__init__(self,instr_name)
->>>>>>> PyQCLab_alpha0
-#        self.instrhandle=self.get_handle()
+
         self.instrhandle.write('*RST')
         self.__level,self.__offset=self.get_level()
         self.__freqency=self.get_freqency()
@@ -160,9 +153,6 @@ class yokogawa7651(instrument):
             self.instrhandle.write('SA{}{}E{};E'.format(polarity,lvl_str,pwr_str))
         else:
             self.instrhandle.write('S{}{}E{};E'.format(polarity,lvl_str,pwr_str))
-
-       
-
             
     def set_stepup(self,digit):
         self.instrhandle.write('UP{};E'.format(digit))

@@ -28,6 +28,8 @@ import os
 import h5py as h5
 
 class Vna_Parameters(gdt.DataSet):
+#    def __init__(self):
+#        pass
     g1 = gdt.BeginGroup('Sweep setups:')
     swp_mode=gdi.ChoiceItem('Sweep Mode:',[('hold','Hold'),('cont','Continuous'),('gro','Groups'),('sing','Single')])
     swp_type=gdi.ChoiceItem('Sweep Type:',[('lin','Linear'),('log','Logarithmic'),('pow','Power'),('cw','CW'),\
@@ -135,6 +137,9 @@ if __name__ == "__main__":
         ax2.set_xlabel('Frequency (Hz)')
         ax2.set_ylabel('Phase (Rad.))')
         
+    vna_param2=Vna_Parameters()
+    if vna_param2.edit():
+        print(vna_param2.choice)
 #        plot_dlg = gqp.CurveDialog(wintitle='Vector Network Analyser Sweep',toolbar=True)
         
             
@@ -143,5 +148,5 @@ if __name__ == "__main__":
         
 #    stamp_gbox = gdq.DataSetEditGroupBox("Dots", Vna_Parameters)
 #    stamp_gbox.show()
-    x=vna_params.swp_IFbandwidth
-    print(vna_params.choice,x)
+#    x=vna_params.swp_IFbandwidth
+#    print(vna_params.choice,x)

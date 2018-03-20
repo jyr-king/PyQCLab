@@ -1,20 +1,51 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun May  7 13:57:50 2017
-
+通过扫谱获取qubit的大致能量信息，包括能级位置、非谐性等。
+所需设备：1微波源，1网分，1 2通道AWG卡，1 2通道高速采集卡，1 触发源，2 IQmixer，2 定向耦合器。
 @author: A108QCLab
 """
+import time
+import skrf as rf
+import numpy as np
 
 from PyQCLab.Instrument.NetworkAnalyser import *
 from PyQCLab.Instrument.MWSource import *
 from PyQCLab.Instrument.DCSources import *
-from PyQCLab.Apps.Resonator_znb20 import *
+from PyQCLab.Utils.WaveForm_Gen import *
+#from PyQCLab.Instrument.Spcm_Cards import *
+from PyQCLab.Examples.VNA_setup_guidata import *
 
 from pylab import *
-import time
-import skrf as rf
-import numpy as np
+
 #%%
+class Vna_Sweep_2D(Vna_Parameters):
+    grp_swp_pwr = gdt.BeginGroup('Sweep Power:')
+    swp_power_start = gdi.FloatItem('From (dBm):',default=0,min=-60,max=10)
+    swp_power_stop = gdi.FloatItem('To (dBm):',default=-60,min=-60,max=10)
+    swp_power_step = gdi.FloatItem('Step (dBm):',default=-3,min=-60,max=10)
+    _grp_swp_pwr = gdt.EndGroup('Sweep Power:')
+#%%
+class Qubit_Spectrum_1D(gdt.DataSet):
+    grp_swp_fq = gdt.BeginGroup('Sweep qubit excitations:')
+    swp_fq_start = gdi.FloatItem('From (GHz):',default=6,min=0,max=20)
+    swp_fq_stop = gdi.FloatItem('To (GHz):',default=6,min=0,max=20)
+    swp_fq_step = gdi.FloatItem('Step (MHz):',default=1,min=-10000,max=10000)
+    _grp_swp_fq = gdt.EndGroup('Sweep qubit excitations:')
+    
+    grp_pulses = gdt.BeginGroup('Pulses Definition:')
+    iq_carrier_freq = gdi.FloatItem('Carrier Frequency (MHz):', default=10.039, min=-200, max=200)
+    stim_pulse_len = gdi.FloatItem('Stimulation Pulse Length (us):', default=10, min=0, max=200)
+    readout_pulse_len = gdi.FloatItem('Readout Pulse Length (us):',default=2, min=0, max=200)  
+    _grp_pulses = gdt.EndGroup('Pulses Definition:')
+    
+    grp_timing = gdt.BeginGroup('Timing Definition:')
+    trig_rate = gdi.IntItem('Trigger Rate:',default=10000,min=1,max=1000000,unit='Hz')
+    delay_stim_to_read = gdi.FloatItem('Delay: stim off to readout on', default=0, unit='ns')
+    record_len = gdi.FloatItem('Record Length per run', default=1, unit='us')
+    record_times = gdi.IntItem('Record(Average) Times',default=1,min=1,max=1000000)
+    _grp_timing = gdt.EndGroup('Timing Definition:')
+#%%    
 na1=ZNB20()
 mw1=RS_MWSource('SMB100A_1')
 dc1=GS200('DC3')
@@ -208,3 +239,13 @@ X,Y=np.meshgrid(bias,fq)
 figure(),pcolor(X,Y,(rf.mag_2_db(np.abs(data2))).T)
 figure(),pcolor(X,Y,np.unwrap(np.angle(data2)).T)
 np.savez('c5q5_spectrum2',data=data2)
+
+#%%
+if __name__ == '__main__':
+    import guidata
+    _app = guidata.qapplication()
+    v1=Vna_Sweep_2D(title='hello!')
+    v1.edit()
+    
+    v2=Qubit_Spectrum_1D()
+    v2.edit()

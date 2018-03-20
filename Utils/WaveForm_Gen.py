@@ -213,20 +213,29 @@ class WaveForm:
             
         if awg_type in ['awg5000']:
             self.waveform+=self.marker1.value.astype('uint16')*2**depth+self.marker2.value.astype('uint16')*2**(depth+1)
-            
+     
+    def func_generator(self,freq,phase=0,offset=0,func=np.cos):
+        self.length=int(self.samplerate/freq)
+        freq_actual=self.samplerate/self.length
+        self.base=BaseBand(self.length)
+        self.base.insert(0,rectangle(self.length))
+        self.carrier=Carrier(self.length,samplerate=self.samplerate,freq=freq_actual,phase=phase,offset=offset,func=func)
+        
+        
         
 if __name__ == '__main__':
     L=10*1024
     samplerate=1250000000
     w=WaveForm(L,samplerate)
-    w.base.insert(1000,gaussian(2000,0.5))
-    
-    c1=Carrier(L,samplerate,freq=1e7,phase=math.pi*0.5,offset=0.)
-    c2=Carrier(L,samplerate,freq=0.5e7,phase=math.pi,offset=0.)
-    c3=Carrier(L,samplerate,freq=1e6,phase=math.pi,offset=0.)
-    w.carrier.adds([c1,c2,c3])
-    w.carrier.update()
-    w.carrier.offset=0.3
+    w.func_generator(22e6,func=np.sin,phase=0.5*np.pi)
+#    w.base.insert(1000,gaussian(2000,0.5))
+#    
+#    c1=Carrier(L,samplerate,freq=1e7,phase=math.pi*0.5,offset=0.)
+#    c2=Carrier(L,samplerate,freq=0.5e7,phase=math.pi,offset=0.)
+#    c3=Carrier(L,samplerate,freq=1e6,phase=math.pi,offset=0.)
+#    w.carrier.adds([c1,c2,c3])
+#    w.carrier.update()
+#    w.carrier.offset=0.3
     w.update('spcm4')
     
     figure()
