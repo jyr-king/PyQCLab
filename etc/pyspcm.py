@@ -140,71 +140,71 @@ if os.name == 'nt':
     else:
         spcm_dwGetErrorInfo_i32 = getattr (spcmDll, "_spcm_dwGetErrorInfo_i32@16")
     spcm_dwGetErrorInfo_i32.argtype = [drv_handle, uptr32, ptr32, c_char_p]
-    spcm_dwGetErrorInfo_i32.restype = uint32
+    spcm_dwGetErrorInfo_i32.restype = c_uint32
 
     # load spcm_dwGetParam_i32
     if (bIs64Bit):
         spcm_dwGetParam_i32 = getattr (spcmDll, "spcm_dwGetParam_i32")
     else:
         spcm_dwGetParam_i32 = getattr (spcmDll, "_spcm_dwGetParam_i32@12")
-    spcm_dwGetParam_i32.argtype = [drv_handle, int32, ptr32]
-    spcm_dwGetParam_i32.restype = uint32
+    spcm_dwGetParam_i32.argtype = [drv_handle, c_int32, ptr32]
+    spcm_dwGetParam_i32.restype = c_uint32
 
     # load spcm_dwGetParam_i64
     if (bIs64Bit):
         spcm_dwGetParam_i64 = getattr (spcmDll, "spcm_dwGetParam_i64")
     else:
         spcm_dwGetParam_i64 = getattr (spcmDll, "_spcm_dwGetParam_i64@12")
-    spcm_dwGetParam_i64.argtype = [drv_handle, int32, ptr64]
-    spcm_dwGetParam_i64.restype = uint32
+    spcm_dwGetParam_i64.argtype = [drv_handle, c_int32, ptr64]
+    spcm_dwGetParam_i64.restype = c_uint32
 
     # load spcm_dwSetParam_i32
     if (bIs64Bit):
         spcm_dwSetParam_i32 = getattr (spcmDll, "spcm_dwSetParam_i32")
     else:
         spcm_dwSetParam_i32 = getattr (spcmDll, "_spcm_dwSetParam_i32@12")
-    spcm_dwSetParam_i32.argtype = [drv_handle, int32, int32]
-    spcm_dwSetParam_i32.restype = uint32
+    spcm_dwSetParam_i32.argtype = [drv_handle, c_int32, c_int32]
+    spcm_dwSetParam_i32.restype = c_uint32
 
     # load spcm_dwSetParam_i64
     if (bIs64Bit):
         spcm_dwSetParam_i64 = getattr (spcmDll, "spcm_dwSetParam_i64")
     else:
         spcm_dwSetParam_i64 = getattr (spcmDll, "_spcm_dwSetParam_i64@16")
-    spcm_dwSetParam_i64.argtype = [drv_handle, int32, int64]
-    spcm_dwSetParam_i64.restype = uint32
+    spcm_dwSetParam_i64.argtype = [drv_handle, c_int32, c_int64]
+    spcm_dwSetParam_i64.restype = c_uint32
 
     # load spcm_dwSetParam_i64m
     if (bIs64Bit):
         spcm_dwSetParam_i64m = getattr (spcmDll, "spcm_dwSetParam_i64m")
     else:
         spcm_dwSetParam_i64m = getattr (spcmDll, "_spcm_dwSetParam_i64m@16")
-    spcm_dwSetParam_i64m.argtype = [drv_handle, int32, int32, int32]
-    spcm_dwSetParam_i64m.restype = uint32
+    spcm_dwSetParam_i64m.argtype = [drv_handle, c_int32, c_int32, c_int32]
+    spcm_dwSetParam_i64m.restype = c_uint32
 
     # load spcm_dwDefTransfer_i64
     if (bIs64Bit):
         spcm_dwDefTransfer_i64 = getattr (spcmDll, "spcm_dwDefTransfer_i64")
     else:
         spcm_dwDefTransfer_i64 = getattr (spcmDll, "_spcm_dwDefTransfer_i64@36")
-    spcm_dwDefTransfer_i64.argtype = [drv_handle, uint32, uint32, uint32, c_void_p, uint64, uint64]
-    spcm_dwDefTransfer_i64.restype = uint32
+    spcm_dwDefTransfer_i64.argtype = [drv_handle, c_uint32, c_uint32, c_uint32, c_void_p, c_uint64, c_uint64]
+    spcm_dwDefTransfer_i64.restype = c_uint32
 
     # load spcm_dwInvalidateBuf
     if (bIs64Bit):
         spcm_dwInvalidateBuf = getattr (spcmDll, "spcm_dwInvalidateBuf")
     else:
         spcm_dwInvalidateBuf = getattr (spcmDll, "_spcm_dwInvalidateBuf@8")
-    spcm_dwInvalidateBuf.argtype = [drv_handle, uint32]
-    spcm_dwInvalidateBuf.restype = uint32
+    spcm_dwInvalidateBuf.argtype = [drv_handle, c_uint32]
+    spcm_dwInvalidateBuf.restype = c_uint32
 
     # load spcm_dwGetContBuf_i64
     if (bIs64Bit):
         spcm_dwGetContBuf_i64 = getattr (spcmDll, "spcm_dwGetContBuf_i64")
     else:
         spcm_dwGetContBuf_i64 = getattr (spcmDll, "_spcm_dwGetContBuf_i64@16")
-    spcm_dwGetContBuf_i64.argtype = [drv_handle, uint32, POINTER(c_void_p), uptr64]
-    spcm_dwGetContBuf_i64.restype = uint32
+    spcm_dwGetContBuf_i64.argtype = [drv_handle, c_uint32, POINTER(c_void_p), uptr64]
+    spcm_dwGetContBuf_i64.restype = c_uint32
 
 
 elif os.name == 'posix':
@@ -230,47 +230,47 @@ elif os.name == 'posix':
     # load spcm_dwGetErrorInfo
     spcm_dwGetErrorInfo_i32 = getattr (spcmDll, "spcm_dwGetErrorInfo_i32")
     spcm_dwGetErrorInfo_i32.argtype = [drv_handle, uptr32, ptr32, c_char_p]
-    spcm_dwGetErrorInfo_i32.restype = uint32
+    spcm_dwGetErrorInfo_i32.restype = c_uint32
 
     # load spcm_dwGetParam_i32
     spcm_dwGetParam_i32 = getattr (spcmDll, "spcm_dwGetParam_i32")
-    spcm_dwGetParam_i32.argtype = [drv_handle, int32, ptr32]
-    spcm_dwGetParam_i32.restype = uint32
+    spcm_dwGetParam_i32.argtype = [drv_handle, c_int32, ptr32]
+    spcm_dwGetParam_i32.restype = c_uint32
 
     # load spcm_dwGetParam_i64
     spcm_dwGetParam_i64 = getattr (spcmDll, "spcm_dwGetParam_i64")
-    spcm_dwGetParam_i64.argtype = [drv_handle, int32, ptr64]
-    spcm_dwGetParam_i64.restype = uint32
+    spcm_dwGetParam_i64.argtype = [drv_handle, c_int32, ptr64]
+    spcm_dwGetParam_i64.restype = c_uc_int32
 
     # load spcm_dwSetParam_i32
     spcm_dwSetParam_i32 = getattr (spcmDll, "spcm_dwSetParam_i32")
-    spcm_dwSetParam_i32.argtype = [drv_handle, int32, int32]
-    spcm_dwSetParam_i32.restype = uint32
+    spcm_dwSetParam_i32.argtype = [drv_handle, c_int32, c_int32]
+    spcm_dwSetParam_i32.restype = c_uint32
 
     # load spcm_dwSetParam_i64
     spcm_dwSetParam_i64 = getattr (spcmDll, "spcm_dwSetParam_i64")
-    spcm_dwSetParam_i64.argtype = [drv_handle, int32, int64]
-    spcm_dwSetParam_i64.restype = uint32
+    spcm_dwSetParam_i64.argtype = [drv_handle, c_int32, c_int64]
+    spcm_dwSetParam_i64.restype = c_uint32
 
     # load spcm_dwSetParam_i64m
     spcm_dwSetParam_i64m = getattr (spcmDll, "spcm_dwSetParam_i64m")
-    spcm_dwSetParam_i64m.argtype = [drv_handle, int32, int32, int32]
-    spcm_dwSetParam_i64m.restype = uint32
+    spcm_dwSetParam_i64m.argtype = [drv_handle, c_int32, c_int32, c_int32]
+    spcm_dwSetParam_i64m.restype = c_uint32
 
     # load spcm_dwDefTransfer_i64
     spcm_dwDefTransfer_i64 = getattr (spcmDll, "spcm_dwDefTransfer_i64")
-    spcm_dwDefTransfer_i64.argtype = [drv_handle, uint32, uint32, uint32, c_void_p, uint64, uint64]
-    spcm_dwDefTransfer_i64.restype = uint32
+    spcm_dwDefTransfer_i64.argtype = [drv_handle, c_uint32, c_uint32, c_uint32, c_void_p, c_uint64, c_uint64]
+    spcm_dwDefTransfer_i64.restype = c_uint32
 
     # load spcm_dwInvalidateBuf
     spcm_dwInvalidateBuf = getattr (spcmDll, "spcm_dwInvalidateBuf")
-    spcm_dwInvalidateBuf.argtype = [drv_handle, uint32]
-    spcm_dwInvalidateBuf.restype = uint32
+    spcm_dwInvalidateBuf.argtype = [drv_handle, c_uint32]
+    spcm_dwInvalidateBuf.restype = c_uint32
 
     # load spcm_dwGetContBuf_i64
     spcm_dwGetContBuf_i64 = getattr (spcmDll, "spcm_dwGetContBuf_i64")
-    spcm_dwGetContBuf_i64.argtype = [drv_handle, uint32, POINTER(c_void_p), uptr64]
-    spcm_dwGetContBuf_i64.restype = uint32
+    spcm_dwGetContBuf_i64.argtype = [drv_handle, c_uint32, POINTER(c_void_p), uptr64]
+    spcm_dwGetContBuf_i64.restype = c_uint32
 
 else:
     raise Exception ('Operating system not supported by pySpcm')

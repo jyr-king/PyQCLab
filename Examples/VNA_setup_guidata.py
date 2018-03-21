@@ -90,17 +90,17 @@ if __name__ == "__main__":
         reader.close()
         
     if vna_params.edit():
-#        vna = ZNB20()
-#
-#        if vna_params.choice == 'CS':
-#            fstart,fstop=vna_params.fcenter-vna_params.fspan/2*1e9,vna_params.fcenter+vna_params.fspan/2*1e9
-#        else:
-#            fstart,fstop=vna_params.fstart*1e9,vna_params.fstop*1e9
-#        
-#        vna.setSweep([fstart,fstop,vna_params.swp_IFbandwidth,vna_params.swp_points,vna_params.pwr,vna_params.swp_average])
-#        vna.sweep2()
-#        freq,Sdata=vna.getData()
-        freq,Sdata=np.arange(vna_params.swp_points),np.arange(vna_params.swp_points,dtype='complex')
+        vna = ZNB20()
+
+        if vna_params.choice == 'CS':
+            fstart,fstop=vna_params.fcenter-vna_params.fspan/2*1e9,vna_params.fcenter+vna_params.fspan/2*1e9
+        else:
+            fstart,fstop=vna_params.fstart*1e9,vna_params.fstop*1e9
+        
+        vna.setSweep([fstart,fstop,vna_params.swp_IFbandwidth,vna_params.swp_points,vna_params.pwr,vna_params.swp_average])
+        vna.sweep2()
+        freq,Sdata=vna.getData()
+#        freq,Sdata=np.arange(vna_params.swp_points),np.arange(vna_params.swp_points,dtype='complex')
         #保存本次运行的设置：
         params_save_path="../Data/VNA_setup.h5"
         if os.path.exists(params_save_path):
@@ -133,13 +133,13 @@ if __name__ == "__main__":
         ax1.set_ylabel('S21 (dB)')
         
         ax2=subplot(212)
-        line2,=ax2.plot(freq,np.angle(Sdata))
+        line2,=ax2.plot(freq,np.unwrap(np.angle(Sdata)))
         ax2.set_xlabel('Frequency (Hz)')
         ax2.set_ylabel('Phase (Rad.))')
         
-    vna_param2=Vna_Parameters()
-    if vna_param2.edit():
-        print(vna_param2.choice)
+#    vna_param2=Vna_Parameters()
+#    if vna_param2.edit():
+#        print(vna_param2.choice)
 #        plot_dlg = gqp.CurveDialog(wintitle='Vector Network Analyser Sweep',toolbar=True)
         
             

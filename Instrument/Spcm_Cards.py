@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan 23 15:42:49 2017
-
+注意事项：spectrum的卡一定要注意触发率！由于板卡存在死时间，触发率过高就会卡死，出来稀奇古怪的波形（或者采到古怪的数据）。
+目前测试表明，spectrum M2i.xx采集卡能够接收的触发率最高为9.5KHz。
 @author: A108QCLab
 """
-from PyQCLab.Instrument.pyspcm import *
+from PyQCLab.etc.pyspcm import *
 
 import sys
 import numpy as np
@@ -52,7 +53,7 @@ class Spectrum_Card:
             
         #Some default settings:
         self.enabled_chs=[]
-        self.range_chs=[]
+        self.range_chs=np.zeros(self.MAX_CHS)
         self.chEnableAll()
         self.setClockMode('int')
         self.setTrigger(trig_source='ext0',mode='pos',level=1000,couple='DC',impedance='50Ohm')
@@ -360,10 +361,11 @@ class Spcm_AD(Spectrum_Card):
         elif self.bytesPerSample == 2:
             pnData = cast(self._pvData,ptr16)
         
-        self.raw_data = pnData[:self.lMemsize.value]
+#        self.raw_data = np.array(pnData[:self.lMemsize.value])
         
-#        for i in range(self.lMemsize.value):
-#            self.data[i] = pnData[i]
+        self.raw_data=np.zeros(self.lMemsize.value)
+        for i in range(self.lMemsize.value):
+            self.raw_data[i] = pnData[i]
 #            self.data=np.frombuffer(pnData,dtype='int16',count=self.lMemsize.value)
     def getData(self,ch):
         return self.raw_data.reshape([-1,self.chCount])[:,ch]/2**(self.bitsPerSample-1)*self.range_chs[ch]              
@@ -375,9 +377,9 @@ if __name__ == '__main__':
     #设置外部触发
     dg=DG645()
     dg.delayA=40e-8
-    dg.delayAB=1e-6
+    dg.delayAB=0.8e-6
     dg.trigSource('int')
-    dg.trigRate(1e4)
+    dg.trigRate(9e3)
     #设置波形回放卡：
     sp1=Spcm_DA(0)
     sp1.chEnableAll()
@@ -444,13 +446,14 @@ if __name__ == '__main__':
     sp2=Spcm_AD(2)
     sp2.setRangeAll('1000mV')
     sp2.setClockMode('int')
-    sp1.setTrigger(trig_source='ext0',mode='pos',level=1000,coupling='DC',impedance='50Ohm')
+    sp2.setTrigger(trig_source='ext0',mode='neg',level=1000,coupling='DC',impedance='50Ohm')
 #    sp2.setTriggerSource('ext0')
 #    sp2.setTriggerMode(trig='ext0',mode='pos')
 #    sp2.setTriggerLevel(1000)
 #    sp2.setTriggerInputCoupling('DC')
 #    sp2.setTriggerImpedance('50Ohm')
     sp2.setInputAll()
+    sp2.setMode('fifo_multi')
     sp2.setRecord(1024,100,pretrig=32)
     sp2.start()
 #    sp2.stop()
